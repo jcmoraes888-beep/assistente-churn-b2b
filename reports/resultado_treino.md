@@ -14,3 +14,5 @@ Taxa de churn no teste: 8.1%. PR-AUC é a métrica principal porque a classe é 
 - **recall_top10**: % dos churns encontrados olhando só os 10% de maior risco.
 
 ![Curva PR](curva_pr_teste.png)
+
+![Treino x validação](treino_vs_validacao.png)

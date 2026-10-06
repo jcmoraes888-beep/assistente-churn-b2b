@@ -41,6 +41,55 @@ def metricas(y, p) -> dict:
     }
 
 
+def grafico_curvas_rede(resultados: list[dict], destino) -> None:
+    """Erro de treino e PR-AUC de validação por época de cada configuração da rede neural.
+    Destaca a melhor configuração e a que mais sofreu overfitting."""
+    redes = [r for r in resultados if r["familia"] == "rede_neural"]
+    if not redes:
+        return
+    melhor = max(redes, key=lambda r: r["pr_auc"])
+
+    def queda(r):  # quanto a validação caiu depois do pico = sinal de overfitting
+        v = [h["val_pr_auc"] for h in r["modelo"].estimador.historico]
+        return max(v) - v[-1]
+    overfit = max((r for r in redes if r is not melhor), key=queda)
+
+    def rotulo(r):
+        p = r["params"]
+        return f"{'-'.join(map(str, p['camadas']))} · drop {p['dropout']} · lr {p['lr']:g}"
+
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(12, 4.3))
+    for r in redes:
+        h = r["modelo"].estimador.historico
+        ep = [x["epoca"] for x in h]
+        if r is melhor:
+            estilo = dict(color="#1a7f37", lw=2.4, zorder=3, label=f"melhor: {rotulo(r)}")
+        elif r is overfit:
+            estilo = dict(color="#d1242f", lw=2.0, zorder=2, label=f"overfitting: {rotulo(r)}")
+        else:
+            estilo = dict(color="#8c959f", lw=1.0, alpha=0.6, zorder=1)
+        a1.plot(ep, [x["loss"] for x in h], **estilo)
+        a2.plot(ep, [x["val_pr_auc"] for x in h], **estilo)
+        if r in (melhor, overfit):
+            b = r["modelo"].estimador.melhor_epoca
+            a2.scatter([b], [h[b]["val_pr_auc"]], color=estilo["color"], s=45, zorder=4, edgecolor="white")
+    a1.set_title("Erro de treino por época")
+    a1.set_xlabel("Época")
+    a1.set_ylabel("Loss (BCE ponderada)")
+    a2.set_title("PR-AUC de validação por época")
+    a2.scatter([], [], color="#57606a", s=45, label="época guardada pelo early stopping")
+    a2.set_xlabel("Época")
+    a2.set_ylabel("PR-AUC")
+    a2.legend(fontsize=8, loc="lower right")
+    for a in (a1, a2):
+        a.grid(alpha=0.25)
+        a.spines[["top", "right"]].set_visible(False)
+    fig.suptitle("Rede neural: 8 configurações testadas · cinza = demais configurações", fontsize=10, color="#57606a")
+    fig.tight_layout()
+    fig.savefig(destino, dpi=130)
+    plt.close(fig)
+
+
 def _mlflow():
     try:
         import mlflow
@@ -128,6 +177,8 @@ def main():
     ax.legend(fontsize=8)
     fig.tight_layout()
     fig.savefig(C.RELATORIOS / "curva_pr_teste.png", dpi=130)
+    plt.close(fig)
+    grafico_curvas_rede(resultados, C.RELATORIOS / "treino_vs_validacao.png")
 
     tabela = comparativo[["modelo", "val_pr_auc", "teste_pr_auc", "teste_roc_auc", "teste_lift_top10",
                           "teste_recall_top10", "teste_brier"]].round(3)
@@ -138,7 +189,8 @@ def main():
           tabela.to_markdown(index=False), "",
           "- **lift_top10**: quantas vezes o top 10% de risco concentra mais churn que a média.",
           "- **recall_top10**: % dos churns encontrados olhando só os 10% de maior risco.", "",
-          "![Curva PR](curva_pr_teste.png)"]
+          "![Curva PR](curva_pr_teste.png)", "",
+          "![Treino x validação](treino_vs_validacao.png)"]
     (C.RELATORIOS / "resultado_treino.md").write_text("\n".join(md), "utf-8")
 
     if mlflow:
@@ -149,6 +201,7 @@ def main():
             for arq in ["modelo_churn.joblib", "metadata.json"]:
                 mlflow.log_artifact(str(C.MODELOS / arq))
             mlflow.log_artifact(str(C.RELATORIOS / "curva_pr_teste.png"))
+            mlflow.log_artifact(str(C.RELATORIOS / "treino_vs_validacao.png"))
     print("\n" + tabela.to_string(index=False))
     print(f"\nCampeão: {campeao.familia} · salvo em models/ · {time.time() - t0:.0f}s")
 

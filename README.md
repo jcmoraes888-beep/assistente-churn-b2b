@@ -53,11 +53,11 @@ Divisão **temporal** (treino em 2024-25, validação e teste em períodos poste
 
 ### Treino × validação: detectando overfitting
 
-| Erro de treino por época | PR-AUC de validação por época |
-|---|---|
-| ![Curvas de treino](reports/curvas_treino_mlflow.png) | ![Validação por época](reports/validacao_por_epoca_mlflow.png) |
+![Treino x validação](reports/treino_vs_validacao.png)
 
-A configuração rosa continua baixando o erro de treino, mas a validação despenca após a época 2: é overfitting. O early stopping interrompe o treino e recupera os pesos da melhor época.
+Gráfico gerado automaticamente a cada treino (`python -m churn_b2b.treinar`). A configuração em **vermelho** continua baixando o erro de treino, mas a PR-AUC de validação despenca logo depois do pico: é **overfitting**. O early stopping interrompe o treino e recupera os pesos da melhor época (●). A configuração em **verde** teve a melhor validação e foi a escolhida entre as redes neurais.
+
+> Os números podem variar um pouco entre computadores (inicialização aleatória e versões das bibliotecas), mas o padrão se repete.
 
 ### Exemplo de saída (`data/scores_atuais.csv`)
 
