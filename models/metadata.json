@@ -1,0 +1,78 @@
+{
+  "modelo": "rede_neural",
+  "params": {
+    "camadas": "(64, 32)",
+    "dropout": "0.3",
+    "lr": "0.0003"
+  },
+  "atributos": [
+    "recencia_dias",
+    "pedidos_90d",
+    "pedidos_90d_anterior",
+    "tendencia_pedidos",
+    "receita_90d",
+    "tendencia_receita",
+    "ticket_medio_90d",
+    "itens_por_pedido_90d",
+    "tendencia_mix",
+    "intervalo_medio_dias",
+    "irregularidade_compras",
+    "pct_entregas_atrasadas_90d",
+    "atraso_medio_entrega_dias",
+    "desconto_medio_90d",
+    "variacao_desconto",
+    "atraso_medio_pagamento_dias",
+    "reclamacoes_entrega_90d",
+    "reclamacoes_preco_90d",
+    "reclamacoes_financeiro_90d",
+    "reclamacoes_produto_90d",
+    "tempo_relacionamento_meses",
+    "prazo_pagamento_dias",
+    "segmento",
+    "cidade",
+    "canal",
+    "vendedor"
+  ],
+  "faixas_risco": {
+    "alto": 0.17409175634384155,
+    "medio": 0.018316619098186493
+  },
+  "metricas_teste": {
+    "teste_roc_auc": 0.9258751871089681,
+    "teste_pr_auc": 0.7247818952065734,
+    "teste_brier": 0.04006901755928993,
+    "teste_lift_top10": 7.110063849194283,
+    "teste_recall_top10": 0.7114624505928854,
+    "teste_taxa_churn": 0.08114175753688262
+  },
+  "treinado_em": "2026-10-06T14:39:01",
+  "cortes": {
+    "treino": [
+      "2025-01-01",
+      "2025-02-01",
+      "2025-03-01",
+      "2025-04-01",
+      "2025-05-01",
+      "2025-06-01",
+      "2025-07-01",
+      "2025-08-01",
+      "2025-09-01",
+      "2025-10-01",
+      "2025-11-01",
+      "2025-12-01",
+      "2026-01-01"
+    ],
+    "validacao": [
+      "2026-03-01",
+      "2026-04-01"
+    ],
+    "teste": [
+      "2026-06-01",
+      "2026-07-01"
+    ]
+  },
+  "avaliacao_explicacoes": {
+    "clientes_avaliados": 194,
+    "causa_real_entre_os_motivos": 0.8814432989690721
+  }
+}

@@ -1,0 +1,16 @@
+# dados gerados (rode python -m churn_b2b.simulacao)
+data/*.csv
+data/*.parquet
+# MLflow local
+mlflow.db
+mlruns/
+mlartifacts/
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.ipynb_checkpoints/
+# segredos
+.env
+.streamlit/secrets.toml
