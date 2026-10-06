@@ -1,0 +1,46 @@
+
+name: CI
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    env:
+      CHURN_EMBEDDINGS: local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Instalar PyTorch (CPU)
+        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+      - name: Testes
+        run: pytest -q
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: testes
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir imagem da API
+        run: docker build -t churn-b2b-api .
+      - name: Testar a API dentro do container
+        run: |
+          docker run -d -p 8000:8000 --name api churn-b2b-api
+          for i in $(seq 1 30); do curl -sf localhost:8000/saude && break; sleep 2; done
+          curl -sf "localhost:8000/carteira?faixa=Alto&limite=3"
+          curl -sf -X POST "localhost:8000/clientes/C00700/plano?modo=regras" | head -c 400
+      - name: Publicar imagem no GHCR (so na main)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          IMG=ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker tag churn-b2b-api $IMG:latest
+          docker push $IMG:latest
