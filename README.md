@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/jcmoraes888-beep/assistente-churn-b2b/actions/workflows/ci.yml/badge.svg)](https://github.com/jcmoraes888-beep/assistente-churn-b2b/actions/workflows/ci.yml)
 
+**[Ver a tela funcionando (demo ao vivo)](https://churn-b2b-jcmoraes.streamlit.app)**
+
 Prevê quais clientes de uma distribuidora vão **parar de comprar**, explica **por quê**, busca nas políticas da empresa **o que pode ser feito** (RAG) e gera o **plano de ação** com LLM, conferido por regras automáticas. Tudo testado e empacotado com CI/CD, Docker e monitoramento de drift (MLOps).
 
 > Dados **100% fictícios**, simulados para uma distribuidora de alimentos do oeste do Paraná (2.500 clientes, ~190 mil pedidos, 30 meses).
