@@ -1,0 +1,12 @@
+# Dependências da API (imagem Docker leve: sem torch/lightgbm, só RAG + agente)
+fastapi>=0.110
+uvicorn>=0.29
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.5
+pydantic>=2.7
+chromadb>=1.0
+openai>=1.40
+langchain-openai>=0.3
+langchain-core>=0.3
+python-dotenv>=1.0

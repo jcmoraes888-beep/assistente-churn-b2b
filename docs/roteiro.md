@@ -14,7 +14,7 @@
 - FastAPI: `/clientes/{id}/risco`, `/clientes/{id}/plano`, `/carteira?faixa=Alto`.
 - Streamlit: lista de clientes em risco → clique → motivos + plano gerado.
 
-## Etapa 4 — MLOps
+## Etapa 4 — MLOps ✅ concluída
 - Dockerfile da API; GitHub Actions rodando `pytest` a cada push e publicando a imagem.
 - Deploy da API no Render e da tela no Streamlit Cloud.
 - Evidently: relatório de drift comparando `referencia_teste.csv` com a carteira atual

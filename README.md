@@ -1,6 +1,8 @@
 # Assistente de Churn B2B
 
-Prevê quais clientes de uma distribuidora vão **parar de comprar**, explica **por quê**, busca nas políticas da empresa **o que pode ser feito** (RAG) e gera o **plano de ação** com LLM, conferido por regras automáticas. A próxima etapa coloca tudo em produção (MLOps).
+[![CI](https://github.com/jcmoraes888-beep/assistente-churn-b2b/actions/workflows/ci.yml/badge.svg)](https://github.com/jcmoraes888-beep/assistente-churn-b2b/actions/workflows/ci.yml)
+
+Prevê quais clientes de uma distribuidora vão **parar de comprar**, explica **por quê**, busca nas políticas da empresa **o que pode ser feito** (RAG) e gera o **plano de ação** com LLM, conferido por regras automáticas. Tudo testado e empacotado com CI/CD, Docker e monitoramento de drift (MLOps).
 
 > Dados **100% fictícios**, simulados para uma distribuidora de alimentos do oeste do Paraná (2.500 clientes, ~190 mil pedidos, 30 meses).
 
@@ -19,7 +21,7 @@ Prevê quais clientes de uma distribuidora vão **parar de comprar**, explica **
 | 1 | Dados, atributos, 3 modelos comparados, MLflow, SHAP | ✅ concluída |
 | 2 | RAG: 10 políticas de retenção, ChromaDB, busca por tema e avaliação | ✅ concluída |
 | 3 | Agente LLM (LangChain + OpenAI), validação automática, API FastAPI e tela Streamlit | ✅ concluída |
-| 4 | MLOps: Docker, GitHub Actions, deploy, monitoramento de drift | ⏳ |
+| 4 | MLOps: GitHub Actions (testes + Docker), imagem no GHCR, deploy da tela, monitoramento de drift | ✅ concluída |
 
 ## O problema: churn em B2B não tem "cancelamento"
 
@@ -145,6 +147,34 @@ Validação automática: ✅ nenhum problema encontrado
 
 **Tela (Streamlit)**: `streamlit run app/streamlit_app.py` mostra a carteira em risco, as causas, o cliente selecionado e o plano gerado, com as políticas usadas e a validação. Sem chave da OpenAI, funciona no modo regras. A pasta `app/` tem um `requirements.txt` próprio, sem PyTorch, para publicar no Streamlit Cloud.
 
+## Etapa 4: MLOps
+
+**Integração contínua (GitHub Actions)**: a cada push, `.github/workflows/ci.yml`:
+
+1. instala as dependências e roda os **14 testes** (vazamento de dados, rótulo, modelo, RAG, agente, validação, API e drift), sem chamar a OpenAI;
+2. constrói a **imagem Docker** da API e testa a API rodando dentro do container;
+3. na branch `main`, publica a imagem no **GitHub Container Registry** (`ghcr.io/jcmoraes888-beep/assistente-churn-b2b`).
+
+**Docker**: imagem leve só com o necessário para servir (RAG + agente + API, sem PyTorch), rodando com usuário sem privilégios e com healthcheck.
+
+```bash
+docker build -t churn-b2b-api .
+docker run -p 8000:8000 -e OPENAI_API_KEY=sk-... churn-b2b-api   # sem a chave: embeddings locais e modo regras
+```
+
+**Monitoramento de data drift** (`python -m churn_b2b.monitoramento.drift`): compara a carteira atual com o conjunto de referência usando **PSI** (calculado no próprio código, testável) e gera também o relatório completo do **Evidently**.
+
+![Drift](reports/drift.png)
+
+O caso é proposital: a simulação tem um choque logístico nas cidades distantes nos últimos meses.
+
+- **Na carteira inteira, nenhum atributo passa do limite de drift forte** (PSI 0,25): o atraso nas entregas aparece só como "atenção".
+- **Por cidade, o problema fica claro**: as entregas atrasadas dobraram em Foz do Iguaçu, Palotina, Medianeira, Marechal Cândido Rondon e Toledo (PSI > 1), enquanto Cascavel, onde fica o centro de distribuição, continua estável.
+- O monitor recomenda **investigar e re-treinar**. Um drift localizado fica diluído na média: monitorar só o global deixaria passar.
+- `tempo_relacionamento_meses` muda naturalmente com o tempo (clientes envelhecem) e é marcado como drift esperado, sem disparar alerta.
+
+**Tela publicada (Streamlit Cloud)**: a pasta `app/` tem `requirements.txt` próprio (sem PyTorch) e usa o retrato `demo/scores_atuais.csv`. Com a chave da OpenAI nos *Secrets*, o plano é gerado pela IA, com **limite de 5 planos por sessão** (`LIMITE_PLANOS_IA`) para proteger o crédito; sem a chave, funciona no modo regras.
+
 ## Como rodar
 
 ```bash
@@ -165,6 +195,10 @@ python -m churn_b2b.rag.avaliar --comparar # acerto@1, acerto@3 e MRR (local x O
 python -m churn_b2b.agente.plano C00700    # plano com LLM (ou --modo regras, sem API)
 uvicorn churn_b2b.api:app --reload         # API em http://localhost:8000/docs
 streamlit run app/streamlit_app.py         # tela
+
+# Etapa 4 — MLOps
+python -m churn_b2b.monitoramento.drift    # PSI + relatório Evidently em reports/
+docker build -t churn-b2b-api . && docker run -p 8000:8000 churn-b2b-api
 pytest                             # testes
 
 mlflow ui --backend-store-uri sqlite:///mlflow.db   # abre http://localhost:5000
@@ -191,7 +225,11 @@ churn_b2b/
     plano.py      LangChain + OpenAI (saída estruturada) e modo regras
     validacao.py  guardrails: citações, alçadas, POL-02, POL-10
   api.py          API FastAPI
+  monitoramento/
+    drift.py      PSI global e por cidade + relatório Evidently
 app/              tela Streamlit (+ requirements próprio para o Streamlit Cloud)
+.github/workflows/ci.yml   testes + build e teste do Docker + publicação no GHCR
+Dockerfile        imagem da API (requirements-api.txt)
 demo/             retrato da carteira pontuada, usado pela tela publicada
 politicas/        10 políticas fictícias + perguntas de avaliação
 tests/            vazamento, rótulo, treino e explicação

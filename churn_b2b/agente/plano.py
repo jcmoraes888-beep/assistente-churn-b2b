@@ -60,7 +60,8 @@ dentro da alçada.
 4. A mensagem ao cliente NUNCA menciona risco, churn, modelo, classificação ou "sistema". Tom de parceria, \
 português do Brasil, no máximo 5 linhas, assinada como [Nome do vendedor].
 5. Se um motivo não tiver política correspondente nos trechos, diga isso no diagnóstico em vez de inventar.
-6. A prioridade segue a faixa de risco (Alto → Alta, Médio → Média, Baixo → Baixa)."""
+6. A prioridade segue a faixa de risco (Alto → Alta, Médio → Média, Baixo → Baixa).
+7. Sempre que a ação envolver desconto, prazo, parcelamento, bonificação ou frete, escreva a condição exata (com número) no campo condicao_comercial, e não só na descrição."""
 
 HUMANO = """## Cliente
 {cliente}

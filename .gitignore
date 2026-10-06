@@ -17,3 +17,6 @@ __pycache__/
 
 # base vetorial (recriada com python -m churn_b2b.rag.base)
 data/chroma/
+
+# relatório HTML do Evidently (grande; recriado com python -m churn_b2b.monitoramento.drift)
+reports/drift_evidently.html

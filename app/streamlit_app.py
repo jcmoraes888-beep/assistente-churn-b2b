@@ -125,11 +125,18 @@ motivos = [c[f"motivo_{i}"] for i in (1, 2, 3) if isinstance(c.get(f"motivo_{i}"
 if motivos:
     st.markdown("**Por que o modelo aponta risco (SHAP):** " + " · ".join(f"`{m}`" for m in motivos))
 
+LIMITE_IA = int(os.environ.get("LIMITE_PLANOS_IA", "5"))
+usados = st.session_state.setdefault("planos_ia", 0)
 chave = f"{c.cliente_id}|{modo}|{modelo}"
-if st.button("✨ Gerar plano de retenção", type="primary"):
+bloqueado = modo == "llm" and usados >= LIMITE_IA and chave not in st.session_state
+if modo == "llm":
+    st.caption(f"Planos com IA nesta sessão: {usados}/{LIMITE_IA}. Depois disso, use o modo Regras.")
+if st.button("✨ Gerar plano de retenção", type="primary", disabled=bloqueado):
     with st.spinner("Buscando políticas e montando o plano…"):
         try:
             st.session_state[chave] = gerar_plano(c.cliente_id, modo, base(), modelo)
+            if modo == "llm":
+                st.session_state["planos_ia"] += 1
         except Exception as erro:
             st.error(f"Não foi possível gerar com a IA ({erro}). Use o modo Regras.")
 
@@ -145,9 +152,10 @@ if r:
             st.success("Validação automática: o plano respeita as políticas (alçadas, citações e mensagem).")
         st.markdown(f"**Diagnóstico.** {p.diagnostico}")
         st.markdown(f"**Prioridade:** {p.prioridade} · **primeiro contato:** {p.prazo_primeiro_contato}")
-        st.dataframe(pd.DataFrame([{"#": i, "Ação": x.descricao, "Responsável": x.responsavel, "Prazo": x.prazo,
-                                    "Condição": x.condicao_comercial or "-", "Política": x.politica}
-                                   for i, x in enumerate(p.acoes, 1)]), hide_index=True)
+        for i, x in enumerate(p.acoes, 1):
+            st.markdown(f"**{i}. {x.descricao}**  \n"
+                        f"`{x.politica}` · {x.responsavel} · {x.prazo}"
+                        + (f" · 💬 {x.condicao_comercial}" if x.condicao_comercial else ""))
         m1, m2 = st.columns(2)
         with m1:
             st.markdown("**Mensagem para o cliente (WhatsApp)**")
