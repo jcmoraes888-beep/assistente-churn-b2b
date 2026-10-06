@@ -55,5 +55,5 @@ def obter(provedor: str = "auto"):
     except ImportError:
         pass
     if provedor == "auto":
-        provedor = "openai" if os.environ.get("OPENAI_API_KEY") else "local"
+        provedor = os.environ.get("CHURN_EMBEDDINGS") or ("openai" if os.environ.get("OPENAI_API_KEY") else "local")
     return EmbeddingOpenAI() if provedor == "openai" else EmbeddingLocal()

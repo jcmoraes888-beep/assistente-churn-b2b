@@ -8,7 +8,7 @@
 - Consulta: `tema_principal` + perfil do cliente → trechos de política mais relevantes.
 - Avaliar: para 20 perguntas, o trecho certo está entre os 3 recuperados?
 
-## Etapa 3 — LLM + API
+## Etapa 3 — LLM + API ✅ concluída
 - LangChain: prompt = risco + motivos SHAP + trechos do RAG → plano de ação + mensagem para o cliente.
 - Saída estruturada (Pydantic): ação, responsável, prazo, mensagem, política citada.
 - FastAPI: `/clientes/{id}/risco`, `/clientes/{id}/plano`, `/carteira?faixa=Alto`.

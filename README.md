@@ -1,6 +1,6 @@
 # Assistente de Churn B2B
 
-Prevê quais clientes de uma distribuidora vão **parar de comprar**, explica **por quê**, busca nas políticas da empresa **o que pode ser feito** (RAG) e, nas próximas etapas, gera o plano de ação com LLM e coloca tudo em produção (MLOps).
+Prevê quais clientes de uma distribuidora vão **parar de comprar**, explica **por quê**, busca nas políticas da empresa **o que pode ser feito** (RAG) e gera o **plano de ação** com LLM, conferido por regras automáticas. A próxima etapa coloca tudo em produção (MLOps).
 
 > Dados **100% fictícios**, simulados para uma distribuidora de alimentos do oeste do Paraná (2.500 clientes, ~190 mil pedidos, 30 meses).
 
@@ -18,7 +18,7 @@ Prevê quais clientes de uma distribuidora vão **parar de comprar**, explica **
 |---|---|---|
 | 1 | Dados, atributos, 3 modelos comparados, MLflow, SHAP | ✅ concluída |
 | 2 | RAG: 10 políticas de retenção, ChromaDB, busca por tema e avaliação | ✅ concluída |
-| 3 | LLM (LangChain) + API FastAPI + tela Streamlit | ⏳ |
+| 3 | Agente LLM (LangChain + OpenAI), validação automática, API FastAPI e tela Streamlit | ✅ concluída |
 | 4 | MLOps: Docker, GitHub Actions, deploy, monitoramento de drift | ⏳ |
 
 ## O problema: churn em B2B não tem "cancelamento"
@@ -102,6 +102,49 @@ Tema principal: financeiro
 
 **Aprendizado:** o filtro por metadados (tema vindo do SHAP) pesa mais do que o modelo de embedding. É ele que leva o acerto@1 de 73% para 95%, porque o modelo de churn já diz *qual* é o problema e a busca só precisa achar a regra certa dentro daquele assunto.
 
+## Etapa 3: agente de retenção (LLM) + API + tela
+
+O agente recebe o pacote da Etapa 2 (cliente, risco, motivos do SHAP e políticas recuperadas) e devolve um **plano de retenção estruturado**: diagnóstico, prioridade, ações com responsável, prazo e **política que autoriza**, roteiro de ligação e mensagem de WhatsApp pronta para o vendedor.
+
+**Como funciona**
+
+- **LangChain + OpenAI com saída estruturada** (`with_structured_output` + Pydantic): o LLM é obrigado a responder no formato do `PlanoRetencao`, não em texto livre.
+- **Prompt com regras de negócio**: usar só as políticas fornecidas, citar o id, respeitar alçadas, resolver a causa antes de dar desconto e nunca expor ao cliente que ele foi classificado como risco.
+- **Validação automática (guardrails)** depois do LLM, sem IA:
+  - toda ação cita uma política que foi de fato recuperada (detecta invenção);
+  - descontos respeitam as alçadas da POL-01 (vendedor 3%, supervisor 6%, gerente 10%);
+  - cliente com problema financeiro não recebe desconto antes de regularizar (POL-02);
+  - a mensagem ao cliente não fala em risco, churn ou modelo (POL-10);
+  - prioridade coerente com a faixa de risco.
+- **Modo regras**: o mesmo pipeline monta o plano sem API. Serve para demonstração sem custo, para os testes automáticos e como plano B se a API falhar.
+- **Probabilidade honesta**: valores acima de 95% aparecem como "mais de 95%", em vez de um "100%" com falsa precisão.
+
+**Exemplo** (`python -m churn_b2b.agente.plano C00700 --modo regras`)
+
+```
+C00700 · Mercearia · Palotina · risco Alto
+1. [POL-02] Contato do financeiro junto com o vendedor para propor reprogramação do vencimento
+   — financeiro, em até 2 dias úteis · Condição: reprogramação em até 15 dias, sem juros
+2. [POL-04] Ligação do vendedor perguntando abertamente se houve algum problema — em até 48 horas
+3. [POL-04] Se não houver pedido em 30 dias, frete grátis nos 2 próximos pedidos
+
+Mensagem: "Olá! Tudo bem? Aqui é [Nome do vendedor], da Distribuidora Modelo Oeste. Vi que os últimos
+boletos ficaram um pouco apertados e quero entender como podemos ajudar..."
+Validação automática: ✅ nenhum problema encontrado
+```
+
+**API (FastAPI)**: `uvicorn churn_b2b.api:app --reload` → documentação em http://localhost:8000/docs
+
+| Método | Rota | O que faz |
+|---|---|---|
+| GET | `/saude` | status, nº de clientes, embeddings em uso |
+| GET | `/carteira?faixa=Alto&tema=entrega` | clientes em risco, ordenados por probabilidade |
+| GET | `/clientes/{id}` | risco, faixa e motivos |
+| GET | `/clientes/{id}/politicas` | políticas recuperadas pelo RAG |
+| POST | `/clientes/{id}/plano?modo=llm` | plano de retenção + validação |
+
+**Tela (Streamlit)**: `streamlit run app/streamlit_app.py` mostra a carteira em risco, as causas, o cliente selecionado e o plano gerado, com as políticas usadas e a validação. Sem chave da OpenAI, funciona no modo regras. A pasta `app/` tem um `requirements.txt` próprio, sem PyTorch, para publicar no Streamlit Cloud.
+
 ## Como rodar
 
 ```bash
@@ -117,6 +160,11 @@ python -m churn_b2b.pontuar        # pontua a carteira atual + motivos (~15 s)
 python -m churn_b2b.rag.base               # indexa as políticas no ChromaDB
 python -m churn_b2b.rag.contexto C00700    # risco + motivos + políticas de um cliente
 python -m churn_b2b.rag.avaliar --comparar # acerto@1, acerto@3 e MRR (local x OpenAI)
+
+# Etapa 3 — agente, API e tela
+python -m churn_b2b.agente.plano C00700    # plano com LLM (ou --modo regras, sem API)
+uvicorn churn_b2b.api:app --reload         # API em http://localhost:8000/docs
+streamlit run app/streamlit_app.py         # tela
 pytest                             # testes
 
 mlflow ui --backend-store-uri sqlite:///mlflow.db   # abre http://localhost:5000
@@ -139,6 +187,12 @@ churn_b2b/
     base.py       indexação no ChromaDB + busca com filtro por tema e segmento
     contexto.py   pacote do cliente: risco + motivos + políticas (entrada do LLM)
     avaliar.py    acerto@k e MRR do recuperador
+  agente/
+    plano.py      LangChain + OpenAI (saída estruturada) e modo regras
+    validacao.py  guardrails: citações, alçadas, POL-02, POL-10
+  api.py          API FastAPI
+app/              tela Streamlit (+ requirements próprio para o Streamlit Cloud)
+demo/             retrato da carteira pontuada, usado pela tela publicada
 politicas/        10 políticas fictícias + perguntas de avaliação
 tests/            vazamento, rótulo, treino e explicação
 reports/          métricas e curva PR

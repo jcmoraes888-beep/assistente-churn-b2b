@@ -11,8 +11,16 @@ import argparse
 
 import pandas as pd
 
-from ..config import DADOS
+from ..config import DADOS, RAIZ
 from .base import BaseConhecimento
+
+DEMO_SCORES = RAIZ / "demo" / "scores_atuais.csv"
+
+
+def carregar_scores() -> pd.DataFrame:
+    """Carteira pontuada. Usa data/ (gerado pelo pontuar) ou, se não existir, o retrato de demonstração."""
+    arq = DADOS / "scores_atuais.csv"
+    return pd.read_csv(arq if arq.exists() else DEMO_SCORES)
 
 
 def montar_consulta(c: pd.Series) -> str:
@@ -25,7 +33,7 @@ def montar_consulta(c: pd.Series) -> str:
 
 
 def contexto_cliente(cliente_id: str | None = None, base: BaseConhecimento | None = None, k: int = 3) -> dict:
-    scores = pd.read_csv(DADOS / "scores_atuais.csv")
+    scores = carregar_scores()
     c = scores.iloc[0] if cliente_id is None else scores.set_index("cliente_id").loc[cliente_id].copy()
     if cliente_id:
         c["cliente_id"] = cliente_id
