@@ -1,6 +1,6 @@
 # Roteiro das próximas etapas
 
-## Etapa 2 — RAG (base de retenção)
+## Etapa 2 — RAG (base de retenção) ✅ concluída
 - Escrever ~10 documentos curtos de política da distribuidora fictícia: descontos por segmento,
   renegociação de prazo, prioridade de rota para cidades distantes, troca de produto, visita do vendedor,
   limites de alçada (quem aprova o quê).

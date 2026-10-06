@@ -39,7 +39,7 @@ DESCRICOES = {
     "prazo_pagamento_dias": ("financeiro", lambda v: f"Prazo de pagamento de {v:.0f} dias"),
     "segmento": ("perfil", lambda v: f"Segmento {v}"),
     "cidade": ("entrega", lambda v: f"Cidade {v}"),
-    "canal": ("relacionamento", lambda v: f"Atendido por {v}"),
+    "canal": ("canal", lambda v: f"Atendido por {v}"),
     "vendedor": ("relacionamento", lambda v: f"Carteira do vendedor {v}"),
 }
 CAUSA_PARA_TEMA = {"servico": "entrega", "preco": "preco", "financeiro": "financeiro"}

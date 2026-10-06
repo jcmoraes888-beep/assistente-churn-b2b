@@ -14,3 +14,6 @@ __pycache__/
 # segredos
 .env
 .streamlit/secrets.toml
+
+# base vetorial (recriada com python -m churn_b2b.rag.base)
+data/chroma/

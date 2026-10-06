@@ -70,5 +70,9 @@
       "2026-06-01",
       "2026-07-01"
     ]
+  },
+  "avaliacao_explicacoes": {
+    "clientes_avaliados": 194,
+    "causa_real_entre_os_motivos": 0.8814432989690721
   }
 }
