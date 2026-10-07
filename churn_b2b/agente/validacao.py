@@ -23,7 +23,8 @@ def _percentuais_desconto(texto: str) -> list[float]:
     t = _sem_acento(texto or "")
     if "desconto" not in t:
         return []
-    return [float(x.replace(",", ".")) for x in re.findall(r"(\d+(?:[.,]\d+)?)\s*%", t)]
+    # set(): o mesmo 7% citado na descrição e na condição comercial conta uma vez só
+    return sorted({float(x.replace(",", ".")) for x in re.findall(r"(\d+(?:[.,]\d+)?)\s*%", t)})
 
 
 def validar_plano(plano, ctx: dict) -> list[dict]:
@@ -75,4 +76,11 @@ def validar_plano(plano, ctx: dict) -> list[dict]:
     # 6) mensagem curta
     if len(plano.mensagem_cliente) > 700:
         add(ALERTA, "Mensagem ao cliente longa demais para WhatsApp.")
-    return achados
+
+    # sem repetição: duas ações com o mesmo problema geram um aviso só
+    vistos, unicos = set(), []
+    for a in achados:
+        if a["mensagem"] not in vistos:
+            vistos.add(a["mensagem"])
+            unicos.append(a)
+    return unicos

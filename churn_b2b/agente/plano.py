@@ -54,7 +54,9 @@ modelo de machine learning e os trechos das políticas internas da empresa.
 
 Regras obrigatórias:
 1. Use SOMENTE ações permitidas pelas políticas fornecidas. Cada ação cita o id da política (ex.: POL-02).
-2. Respeite as alçadas e os números das políticas (percentuais, prazos, valores). Nunca invente condições.
+2. Respeite as alçadas e os números das políticas (percentuais, prazos, valores). Nunca invente condições. \
+Alçada de desconto (POL-01): vendedor até 3%, supervisor comercial até 6%, gerente comercial até 10%. \
+O responsável pela ação tem que ter alçada para o percentual oferecido.
 3. Primeiro resolva a causa (entrega, financeiro, produto, relacionamento). Condição comercial só depois e \
 dentro da alçada.
 4. A mensagem ao cliente NUNCA menciona risco, churn, modelo, classificação ou "sistema". Tom de parceria, \

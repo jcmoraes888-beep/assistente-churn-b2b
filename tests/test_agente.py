@@ -71,3 +71,18 @@ def test_api():
 def test_validacao_pega_codigo_interno_na_mensagem(ctx):
     plano = P.plano_por_regras(ctx).model_copy(update={"mensagem_cliente": "Olá! Posso ajudar? Abraço, V03"})
     assert any("código interno" in v["mensagem"] for v in validar_plano(plano, ctx))
+
+
+def test_validacao_nao_repete_alerta_de_alcada():
+    from churn_b2b.agente.plano import Acao, PlanoRetencao
+    from churn_b2b.agente.validacao import validar_plano
+    acao = Acao(descricao="Oferecer desconto de 7% no mix de pães", responsavel="supervisor comercial",
+                prazo="em até 7 dias", politica="POL-01", condicao_comercial="Desconto de 7% por 60 dias")
+    plano = PlanoRetencao(diagnostico="x", prioridade="Alta", prazo_primeiro_contato="24h",
+                          acoes=[acao, acao], roteiro_ligacao=["x"],
+                          mensagem_cliente="Olá! Podemos conversar esta semana? [Nome do vendedor]",
+                          o_que_evitar=["x"])
+    ctx = {"politicas": [{"doc_id": "POL-01"}], "regras_gerais": [], "tema_principal": "preco",
+           "cliente": {"faixa_risco": "Alto"}}
+    alcada = [a for a in validar_plano(plano, ctx) if "alçada" in a["mensagem"]]
+    assert len(alcada) == 1
