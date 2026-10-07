@@ -62,6 +62,11 @@ def validar_plano(plano, ctx: dict) -> list[dict]:
         if termo in msg:
             add(ERRO, f"A mensagem ao cliente menciona '{termo}'. A POL-10 proíbe expor a classificação.")
 
+    # 4b) códigos internos não podem aparecer para o cliente
+    if re.search(r"\b(V\d{2}|C\d{5})\b", plano.mensagem_cliente):
+        add(ALERTA, "A mensagem ao cliente traz um código interno (vendedor ou cliente). "
+                    "Troque pelo nome do vendedor antes de enviar.")
+
     # 5) prioridade coerente com a faixa de risco
     esperado = {"Alto": "Alta", "Médio": "Média", "Baixo": "Baixa"}.get(ctx["cliente"]["faixa_risco"])
     if esperado and plano.prioridade != esperado:

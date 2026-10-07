@@ -66,3 +66,8 @@ def test_api():
     r = c.post(f"/clientes/{cid}/plano", params={"modo": "regras"}).json()
     assert r["modo"] == "regras" and r["plano"]["acoes"]
     assert c.get("/clientes/XXXXX").status_code == 404
+
+
+def test_validacao_pega_codigo_interno_na_mensagem(ctx):
+    plano = P.plano_por_regras(ctx).model_copy(update={"mensagem_cliente": "Olá! Posso ajudar? Abraço, V03"})
+    assert any("código interno" in v["mensagem"] for v in validar_plano(plano, ctx))
